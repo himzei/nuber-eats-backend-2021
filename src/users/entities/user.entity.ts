@@ -39,7 +39,7 @@ export class User extends CoreEntity {
   @Field((type) => UserRole)
   role: UserRole;
 
-  @Column({ default: true })
+  @Column({ default: false })
   @Field((type) => Boolean)
   verified: boolean;
 
