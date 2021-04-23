@@ -8,12 +8,21 @@ import { MailModuleOptions } from './mail.interfaces';
 export class MailService {
   constructor(
     @Inject(CONFIG_OPTIONS) private readonly options: MailModuleOptions,
-  ) {}
+  ) {
+    this.sendEmail('test', 'content')
+      .then(() => {
+        console.log('sent mail');
+      })
+      .catch((error) => {
+        console.log(error.response.body);
+      });
+  }
 
   private async sendEmail(subject: string, content: string) {
     const form = new FormData();
     form.append('from', `Excited User <mailgun@${this.options.domain}>`);
     form.append('to', `himzei@naver.com`);
+    form.append('template', 'initial');
     form.append('subject', subject);
     form.append('text', content);
 
