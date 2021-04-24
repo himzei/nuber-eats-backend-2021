@@ -1,5 +1,6 @@
 import { Test } from '@nestjs/testing';
 import { getRepositoryToken } from '@nestjs/typeorm';
+import exp from 'node:constants';
 import { JwtService } from 'src/jwt/jwt.service';
 import { MailService } from 'src/mail/mail.service';
 import { getRepository, Repository } from 'typeorm';
@@ -11,6 +12,7 @@ const mockRepository = () => ({
   findOne: jest.fn(),
   save: jest.fn(),
   create: jest.fn(),
+  findOneOrFail: jest.fn(),
 });
 
 const mockJwtService = {
@@ -160,13 +162,73 @@ describe('UserService', () => {
       };
       usersRepository.findOne.mockResolvedValue(mockedUser);
       const result = await service.login(loginArgs);
-      console.log(result);
       expect(jwtService.sign).toHaveBeenCalledTimes(1);
       expect(jwtService.sign).toHaveBeenCalledWith(expect.any(Number));
       expect(result).toEqual({ ok: true, token: 'signed-token-baby' });
     });
   });
-  it.todo('findById ');
-  it.todo('editProfile ');
+
+  describe('findById', () => {
+    const findByIdArgs = {
+      id: 1,
+    };
+    it('should find an existing user', async () => {
+      usersRepository.findOneOrFail.mockResolvedValue({ id: 1 });
+      const result = await service.findById(1);
+      expect(result).toEqual({ ok: true, user: findByIdArgs });
+    });
+
+    it('should fail if no user if found', async () => {
+      usersRepository.findOneOrFail.mockRejectedValue(new Error());
+      const result = await service.findById(1);
+      expect(result).toEqual({ ok: false, error: 'User not found' });
+    });
+  });
+
+  describe('editProfile', () => {
+    it('should change email', async () => {
+      const oldUser = {
+        email: 'abc@email.com',
+        verified: true,
+      };
+
+      const editProfileArgs = {
+        userId: 1,
+        input: { email: 'abc@email.com' },
+      };
+
+      const newVerification = {
+        code: 'code',
+      };
+
+      const newUser = {
+        verified: false,
+        email: editProfileArgs.input.email,
+      };
+
+      usersRepository.findOne.mockResolvedValue(oldUser);
+      verificationsRepository.create.mockReturnValue(newVerification);
+      verificationsRepository.save.mockResolvedValue(newVerification);
+
+      await service.editProfile(editProfileArgs.userId, editProfileArgs.input);
+
+      expect(usersRepository.findOne).toHaveBeenCalledTimes(1);
+      expect(usersRepository.findOne).toHaveBeenCalledWith(
+        editProfileArgs.userId,
+      );
+
+      expect(verificationsRepository.create).toHaveBeenCalledWith({
+        user: newUser,
+      });
+      expect(verificationsRepository.save).toHaveBeenCalledWith(
+        newVerification,
+      );
+      expect(mailService.sendVerificationEmail).toHaveBeenCalledWith(
+        newUser.email,
+        newVerification.code,
+      );
+    });
+  });
+
   it.todo('verifyEmail ');
 });
