@@ -7,13 +7,13 @@ import {
   Length,
 } from 'class-validator';
 import { CoreEntity } from 'src/common/entities/core.entity';
-import { Column, Entity, ManyToOne, PrimaryGeneratedColumn } from 'typeorm';
-import { Category } from './category.entity';
+import { Column, Entity, OneToMany, PrimaryGeneratedColumn } from 'typeorm';
+import { Restaurant } from './restaurant.entity';
 
 @InputType({ isAbstract: true })
 @ObjectType()
 @Entity()
-export class Restaurant extends CoreEntity {
+export class Category extends CoreEntity {
   @Field((type) => String)
   @Column()
   @IsString()
@@ -25,12 +25,7 @@ export class Restaurant extends CoreEntity {
   @IsString()
   coverImg: string;
 
-  @Field((type) => String, { nullable: true, defaultValue: 'Daegu in Korea' })
-  @Column()
-  @IsString()
-  address: string;
-
-  @ManyToOne((type) => Category, (category) => category.restaurant)
-  @Field((type) => Category)
-  category: Category;
+  @Field((type) => [Restaurant])
+  @OneToMany((type) => Restaurant, (restaurant) => restaurant.category)
+  restaurant: Restaurant[];
 }
