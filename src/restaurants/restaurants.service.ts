@@ -23,6 +23,18 @@ export class RestaurantService {
     private readonly categories: Repository<Category>,
   ) {}
 
+  async getOrCreateCategory(name: string): Promise<Category> {
+    const categoryName = name.trim().toLowerCase();
+    const categorySlug = categoryName.replace(/ /g, '-');
+    let category = await this.categories.findOne({ slug: categorySlug });
+    if (!category) {
+      category = await this.categories.save(
+        this.categories.create({ slug: categorySlug, name: categoryName }),
+      );
+    }
+    return category;
+  }
+
   async createRestaurant(
     owner: User,
     createRestaurantInput: CreateRestaurantInput,
@@ -33,13 +45,10 @@ export class RestaurantService {
       const categoryName = createRestaurantInput.categoryName
         .trim()
         .toLowerCase();
-      const categorySlug = categoryName.replace(/ /g, '-');
-      let category = await this.categories.findOne({ slug: categorySlug });
-      if (!category) {
-        category = await this.categories.save(
-          this.categories.create({ slug: categorySlug, name: categoryName }),
-        );
-      }
+      const category = await this.getOrCreateCategory(
+        createRestaurantInput.categoryName,
+      );
+
       newRestaurant.category = category;
       await this.restaurants.save(newRestaurant);
       return {
@@ -57,6 +66,29 @@ export class RestaurantService {
     owner: User,
     editRestaurantInput: EditRestaurantInput,
   ): Promise<EditRestaurantOutput> {
-    return { ok: true };
+    try {
+      const restaurant = await this.restaurants.findOneOrFail(
+        editRestaurantInput.restaurantId,
+        { loadRelationIds: true },
+      );
+      if (!restaurant) {
+        return {
+          ok: false,
+          error: 'Restaurant not found',
+        };
+      }
+      if (owner.id !== restaurant.ownerId) {
+        return {
+          ok: false,
+          error: "You can't edit a restaurant that you don't own",
+        };
+      }
+      return { ok: true };
+    } catch {
+      return {
+        ok: false,
+        error: 'Could not edit Restaurant',
+      };
+    }
   }
 }
