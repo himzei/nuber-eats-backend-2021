@@ -1,7 +1,6 @@
 import { CanActivate, ExecutionContext, Injectable } from '@nestjs/common';
 import { Reflector } from '@nestjs/core';
 import { GqlExecutionContext } from '@nestjs/graphql';
-import { resolveSoa } from 'node:dns';
 import { User } from 'src/users/entities/user.entity';
 import { AllowedRoles } from './role.decorator';
 
