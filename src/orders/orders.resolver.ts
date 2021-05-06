@@ -56,31 +56,11 @@ export class OrderResolver {
     return this.ordersService.editOrder(user, editOrderInput);
   }
 
-  @Mutation((returns) => Boolean)
-  async potatoReady(@Args('potatoId') potatoId: number) {
-    await this.pubSub.publish('hotPotatos', {
-      readyPotato: potatoId,
-    });
-    return true;
-  }
-
-  @Subscription((returns) => String, {
-    filter: ({ readyPotato }, { potatoId }) => {
-      return readyPotato === potatoId;
-    },
-    resolve: ({ readyPotato }) =>
-      `Your potato with the id ${readyPotato} is ready!`,
-  })
-  @Role(['Any'])
-  readyPotato(@Args('potatoId') potatoId: number) {
-    return this.pubSub.asyncIterator('hotPotatos');
-  }
-
   @Subscription((returns) => Order, {
-    filter: (payload, _, context) => {
-      console.log(payload, context);
-      return true;
+    filter: ({ pendingOrders: { ownerId } }, _, { user }) => {
+      return ownerId === user.id;
     },
+    resolve: ({ pendingOrders: { order } }) => order,
   })
   @Role(['Owner'])
   pendingOrders() {
